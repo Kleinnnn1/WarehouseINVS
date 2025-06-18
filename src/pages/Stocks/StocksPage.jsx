@@ -11,34 +11,66 @@ import Background from "../../assets/images/background.jpg"
 import EditItemModal from "../../components/EditItemModal";
 import { supabase } from "../../service/supabaseClient"
 import AddStockModal from "../../components/AddModalStock";
+import TakeItemModal from "../../components/TakeItemModal";
 
 function StocksPage() {
 
-    useEffect(() => {
-        const fetchItems = async () => {
-            try {
-                setLoading(true);
+useEffect(() => {
+    const fetchItemsAndLogs = async () => {
+        setLoading(true);
+        try {
+            // Fetch items
+            const { data: itemsData, error: itemsError } = await supabase
+                .from("items")
+                .select("*")
+                .order("id", { ascending: true });
 
-                const { data, error } = await supabase
-                    .from("items")
-                    .select("*")
-                    .order("id", { ascending: true });
-
-                if (error) {
-                    console.error("Supabase error fetching items:", error.message);
-                } else {
-                    console.log("Fetched items from Supabase:", data);
-                    setItems(data);
-                }
-            } catch (err) {
-                console.error("Unexpected error fetching items:", err);
-            } finally {
-                setLoading(false);
+            if (itemsError) {
+                console.error("Error fetching items:", itemsError.message);
+            } else {
+                setItems(itemsData);
             }
-        };
 
-        fetchItems();
-    }, []);
+            // Fetch logs, joining item name
+            const { data: logsData, error: logsError } = await supabase
+                .from("activity_logs")
+                .select(`
+                    id,
+                    item_id,
+                    quantity,
+                    action_type,
+                    reason,
+                    issued_to,
+                    issued_at,
+                    items (name)
+                `)
+                .order("issued_at", { ascending: false });
+
+            if (logsError) {
+                console.error("Error fetching activity logs:", logsError.message);
+            } else {
+                const formattedLogs = logsData.map(log => ({
+                    id: log.id,
+                    item: log.items?.name || "Unknown Item",
+                    action: `${log.action_type === "take" ? "Taken" : "Added"} by ${log.issued_to}`,
+                    quantity: log.quantity,
+                    timestamp: new Date(log.issued_at).toLocaleString(),
+                    reason: log.reason,
+                }));
+
+                setLogs(formattedLogs);
+            }
+
+        } catch (err) {
+            console.error("Unexpected error:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    fetchItemsAndLogs();
+}, []);
+
 
     const notifications = [
         "Item A stock is low.",
@@ -46,33 +78,9 @@ function StocksPage() {
         "System maintenance scheduled tomorrow.",
     ];
 
-    const sampleLogs = [
-        {
-            id: 1,
-            action: "Taken",
-            item: "Item A",
-            quantity: 2,
-            timestamp: "6/18/2025, 10:24:00 AM",
-        },
-        {
-            id: 2,
-            action: "Added",
-            item: "Item B",
-            quantity: 5,
-            timestamp: "6/18/2025, 9:55:12 AM",
-        },
-        {
-            id: 3,
-            action: "Taken",
-            item: "Item C",
-            quantity: 1,
-            timestamp: "6/18/2025, 8:40:33 AM",
-        },
-    ];
-
+    const [logs, setLogs] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [items, setItems] = useState([]);
-    const [logs, setLogs] = useState(sampleLogs);
     const [showModal, setShowModal] = useState(false);
     const [showScannerModal, setShowScannerModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
@@ -80,17 +88,53 @@ function StocksPage() {
     const [loading, setLoading] = useState(true);
     const [showAddStockModal, setShowAddStockModal] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
+    const [showTakeModal, setShowTakeModal] = useState(false);
+    const [takingItem, setTakingItem] = useState(null);
+
+    const handleConfirmTakeItem = (details) => {
+        updateStock(takingItem.id, -1, "Taken");
+
+        // Add more detailed log
+        setLogs(prev => [
+            {
+                id: Date.now(),
+                action: `Taken by ${details.who}`,
+                item: takingItem.name,
+                quantity: 1,
+                timestamp: new Date(details.when).toLocaleString(),
+                reason: details.reason,
+            },
+            ...prev
+        ]);
+
+        setTakingItem(null);
+        setShowTakeModal(false);
+    };
 
     const handleAddStock = (item) => {
         setSelectedItem(item);
         setShowAddStockModal(true);
     };
 
-    const handleConfirmAddStock = (quantity) => {
-        updateStock(selectedItem.id, quantity, "Added");
+    const handleConfirmAddStock = (updatedItem) => {
+        setItems(prev =>
+            prev.map(i => (i.id === updatedItem.id ? updatedItem : i))
+        );
+
+        setLogs(prev => [
+            {
+                id: Date.now(),
+                item: updatedItem.name,
+                quantity: updatedItem.stock - items.find(i => i.id === updatedItem.id).stock,
+                timestamp: new Date().toLocaleString(),
+            },
+            ...prev
+        ]);
+
         setShowAddStockModal(false);
         setSelectedItem(null);
     };
+
 
 
     const handleSaveEditedItem = (updatedItem) => {
@@ -172,13 +216,18 @@ function StocksPage() {
                 {/* Item Grid */}
                 {loading ? (
                     <p>Loading items...</p>
+                ) : filteredItems.length === 0 ? (
+                    <p className="text-gray-600 text-center">No available items.</p>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {filteredItems.map(item => (
                             <ItemCard
                                 key={item.id}
                                 item={item}
-                                onTake={(id) => updateStock(id, -1, "Taken")}
+                                onTake={(item) => {
+                                    setTakingItem(item);
+                                    setShowTakeModal(true);
+                                }}
                                 onAdd={(item) => handleAddStock(item)}
                                 onEdit={(item) => {
                                     setCurrentItem(item);
@@ -188,7 +237,6 @@ function StocksPage() {
                         ))}
                     </div>
                 )}
-
 
                 {/* Action Logs */}
                 <div className="mt-10">
@@ -222,6 +270,16 @@ function StocksPage() {
                     item={selectedItem}
                 />
             )}
+
+            {showTakeModal && takingItem && (
+                <TakeItemModal
+                    isOpen={showTakeModal}
+                    onClose={() => setShowTakeModal(false)}
+                    onSubmit={handleConfirmTakeItem}
+                    item={takingItem}
+                />
+            )}
+            
         </>
     );
 
