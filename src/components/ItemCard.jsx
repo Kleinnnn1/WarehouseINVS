@@ -14,7 +14,7 @@ function ItemCard({ item, onTake, onAdd, onEdit }) {
 
             <div className="mt-4 flex gap-2">
                 <button
-                    onClick={() => onTake(item.id)}
+                    onClick={() => onTake(item)}
                     disabled={item.stock === 0}
                     className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition w-full"
                 >
