@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "../service/supabaseClient";
 
 function EditItemModal({ isOpen, onClose, onSave, item }) {
     const [formData, setFormData] = useState({
@@ -12,7 +13,7 @@ function EditItemModal({ isOpen, onClose, onSave, item }) {
             setFormData({
                 itemName: item.name || "",
                 stock: item.stock || 0,
-                qrCode: item.qrCode || "",
+                qrCode: item.qr_url || "", // Ensure correct field mapping
             });
         }
     }, [item]);
@@ -23,8 +24,33 @@ function EditItemModal({ isOpen, onClose, onSave, item }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onSave({ ...item, name: formData.itemName, stock: parseInt(formData.stock) });
+        onSave({
+            ...item,
+            name: formData.itemName,
+            stock: parseInt(formData.stock),
+        });
         onClose();
+    };
+
+    const handleDelete = async () => {
+        if (!item || !item.id) return;
+
+        const confirm = window.confirm(`Are you sure you want to delete "${item.name}"?`);
+        if (!confirm) return;
+
+        const { error } = await supabase
+            .from("items")
+            .delete()
+            .eq("id", item.id);
+
+        if (error) {
+            console.error("Delete failed:", error.message);
+            alert("Failed to delete item.");
+        } else {
+            alert("Item deleted successfully.");
+            onClose(); // Close the modal
+            // Optionally trigger parent refresh
+        }
     };
 
     if (!isOpen) return null;
@@ -66,20 +92,29 @@ function EditItemModal({ isOpen, onClose, onSave, item }) {
                             className="w-full border border-green-300 rounded-md p-2 bg-gray-100 cursor-not-allowed"
                         />
                     </div>
-                    <div className="flex justify-end gap-2 mt-4">
+                    <div className="flex justify-between items-center mt-4">
                         <button
                             type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
+                            onClick={handleDelete}
+                            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
                         >
-                            Cancel
+                            Delete
                         </button>
-                        <button
-                            type="submit"
-                            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
-                        >
-                            Save
-                        </button>
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="px-4 py-2 bg-gray-300 text-black rounded-md hover:bg-gray-400 transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+                            >
+                                Save
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>

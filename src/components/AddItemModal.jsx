@@ -1,10 +1,11 @@
 import { useState } from "react";
+import { supabase } from "../service/supabaseClient"
 
 function AddItemModal({ isOpen, onClose, onSave }) {
     const [formData, setFormData] = useState({
         itemName: "",
         stock: "",
-        addedBy: "",
+        price: "",
         qrCode: ""
     });
 
@@ -12,16 +13,45 @@ function AddItemModal({ isOpen, onClose, onSave }) {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        onSave(formData);
-        onClose(); // close after save
+
+        const newItem = {
+            name: formData.itemName,
+            stock: parseInt(formData.stock),
+            price: formData.price ? parseFloat(formData.price) : null,
+            qr_url: formData.qrCode || null,
+            threshold: 0,
+        };
+
+        const { data, error } = await supabase
+            .from("items")
+            .insert([newItem])
+            .select(); // ⬅️ Make sure to use `.select()` to return the inserted data
+
+        if (error || !data || data.length === 0) {
+            console.error("Failed to insert item:", error?.message || "No data returned");
+            alert("Failed to save item. Check the console for details.");
+            return;
+        }
+
+        if (onSave) onSave(data[0]);
+
+        setFormData({ itemName: "", stock: "", price: "", qrCode: "" });
+        onClose();
+
+        setTimeout(() => {
+            alert("Item added successfully!");
+        }, 100);
     };
+
+
+
 
     if (!isOpen) return null;
 
     return (
-       <div className="fixed inset-0 bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
                 <h2 className="text-2xl font-bold text-green-700 mb-4">Add New Item</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -48,12 +78,12 @@ function AddItemModal({ isOpen, onClose, onSave }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-green-800 font-medium mb-1">Added by</label>
+                        <label className="block text-green-800 font-medium mb-1">Price</label>
                         <input
                             type="text"
-                            name="addedBy"
+                            name="price"
                             onChange={handleChange}
-                            value={formData.addedBy}
+                            value={formData.price}
                             className="w-full border border-green-300 rounded-md p-2 focus:ring-2 focus:ring-green-500 outline-none"
                         />
                     </div>

@@ -21,11 +21,12 @@ function ItemCard({ item, onTake, onAdd, onEdit }) {
                     Take Item
                 </button>
                 <button
-                    onClick={() => onAdd(item.id)}
+                    onClick={() => onAdd(item)}
                     className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition w-full"
                 >
                     Add Stock
                 </button>
+
             </div>
         </div>
     );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AddItemButton from "../../components/AddItemButton";
 import SettingsButton from "../../components/SettingButton";
 import NotificationButton from "../../components/NotificationButton";
@@ -9,19 +9,41 @@ import ScannerButton from "../../components/ScannerButton";
 import ScannerModal from "../../components/ScannerModal";
 import Background from "../../assets/images/background.jpg"
 import EditItemModal from "../../components/EditItemModal";
+import { supabase } from "../../service/supabaseClient"
+import AddStockModal from "../../components/AddModalStock";
 
 function StocksPage() {
+
+    useEffect(() => {
+        const fetchItems = async () => {
+            try {
+                setLoading(true);
+
+                const { data, error } = await supabase
+                    .from("items")
+                    .select("*")
+                    .order("id", { ascending: true });
+
+                if (error) {
+                    console.error("Supabase error fetching items:", error.message);
+                } else {
+                    console.log("Fetched items from Supabase:", data);
+                    setItems(data);
+                }
+            } catch (err) {
+                console.error("Unexpected error fetching items:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchItems();
+    }, []);
 
     const notifications = [
         "Item A stock is low.",
         "New stock added for Item B.",
         "System maintenance scheduled tomorrow.",
-    ];
-
-    const sampleItems = [
-        { id: 1, name: "PC", price: 100, stock: 10 },
-        { id: 2, name: "Oil", price: 150, stock: 5 },
-        { id: 3, name: "Table", price: 200, stock: 8 },
     ];
 
     const sampleLogs = [
@@ -49,12 +71,27 @@ function StocksPage() {
     ];
 
     const [searchTerm, setSearchTerm] = useState("");
-    const [items, setItems] = useState(sampleItems);
+    const [items, setItems] = useState([]);
     const [logs, setLogs] = useState(sampleLogs);
     const [showModal, setShowModal] = useState(false);
     const [showScannerModal, setShowScannerModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [currentItem, setCurrentItem] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [showAddStockModal, setShowAddStockModal] = useState(false);
+    const [selectedItem, setSelectedItem] = useState(null);
+
+    const handleAddStock = (item) => {
+        setSelectedItem(item);
+        setShowAddStockModal(true);
+    };
+
+    const handleConfirmAddStock = (quantity) => {
+        updateStock(selectedItem.id, quantity, "Added");
+        setShowAddStockModal(false);
+        setSelectedItem(null);
+    };
+
 
     const handleSaveEditedItem = (updatedItem) => {
         setItems(items.map(i => (i.id === updatedItem.id ? updatedItem : i)));
@@ -133,21 +170,25 @@ function StocksPage() {
                 />
 
                 {/* Item Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {filteredItems.map(item => (
-                        <ItemCard
-                            key={item.id}
-                            item={item}
-                            onTake={(id) => updateStock(id, -1, "Taken")}
-                            onAdd={(id) => updateStock(id, 1, "Added")}
-                            onEdit={(item) => {
-                                setCurrentItem(item);
-                                setShowEditModal(true);
-                            }}
-                        />
+                {loading ? (
+                    <p>Loading items...</p>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {filteredItems.map(item => (
+                            <ItemCard
+                                key={item.id}
+                                item={item}
+                                onTake={(id) => updateStock(id, -1, "Taken")}
+                                onAdd={(item) => handleAddStock(item)}
+                                onEdit={(item) => {
+                                    setCurrentItem(item);
+                                    setShowEditModal(true);
+                                }}
+                            />
+                        ))}
+                    </div>
+                )}
 
-                    ))}
-                </div>
 
                 {/* Action Logs */}
                 <div className="mt-10">
@@ -170,6 +211,15 @@ function StocksPage() {
                     onClose={() => setShowEditModal(false)}
                     onSave={handleSaveEditedItem}
                     item={currentItem}
+                />
+            )}
+
+            {showAddStockModal && selectedItem && (
+                <AddStockModal
+                    isOpen={showAddStockModal}
+                    onClose={() => setShowAddStockModal(false)}
+                    onSubmit={handleConfirmAddStock}
+                    item={selectedItem}
                 />
             )}
         </>
