@@ -2,17 +2,63 @@ import { useState } from "react";
 import AddItemButton from "../../components/AddItemButton";
 import SettingsButton from "../../components/SettingButton";
 import NotificationButton from "../../components/NotificationButton";
-
-const sampleItems = [
-    { id: 1, name: "Item A", price: 100, stock: 10 },
-    { id: 2, name: "Item B", price: 150, stock: 5 },
-    { id: 3, name: "Item C", price: 200, stock: 8 },
-];
+import ItemCard from "../../components/ItemCard";
+import ActivityLogItem from "../../components/ActivityLogItem";
+import NotificationModal from "../../components/NotificationModal";
+import ScannerButton from "../../components/ScannerButton";
+import ScannerModal from "../../components/ScannerModal";
+import Background from "../../assets/images/background.jpg"
+import EditItemModal from "../../components/EditItemModal";
 
 function StocksPage() {
+
+    const notifications = [
+        "Item A stock is low.",
+        "New stock added for Item B.",
+        "System maintenance scheduled tomorrow.",
+    ];
+
+    const sampleItems = [
+        { id: 1, name: "PC", price: 100, stock: 10 },
+        { id: 2, name: "Oil", price: 150, stock: 5 },
+        { id: 3, name: "Table", price: 200, stock: 8 },
+    ];
+
+    const sampleLogs = [
+        {
+            id: 1,
+            action: "Taken",
+            item: "Item A",
+            quantity: 2,
+            timestamp: "6/18/2025, 10:24:00 AM",
+        },
+        {
+            id: 2,
+            action: "Added",
+            item: "Item B",
+            quantity: 5,
+            timestamp: "6/18/2025, 9:55:12 AM",
+        },
+        {
+            id: 3,
+            action: "Taken",
+            item: "Item C",
+            quantity: 1,
+            timestamp: "6/18/2025, 8:40:33 AM",
+        },
+    ];
+
     const [searchTerm, setSearchTerm] = useState("");
     const [items, setItems] = useState(sampleItems);
-    const [logs, setLogs] = useState([]);
+    const [logs, setLogs] = useState(sampleLogs);
+    const [showModal, setShowModal] = useState(false);
+    const [showScannerModal, setShowScannerModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [currentItem, setCurrentItem] = useState(null);
+
+    const handleSaveEditedItem = (updatedItem) => {
+        setItems(items.map(i => (i.id === updatedItem.id ? updatedItem : i)));
+    };
 
     const filteredItems = items.filter(item =>
         item.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -41,74 +87,94 @@ function StocksPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 text-green-800 p-8">
-            <div className="flex items-center justify-between mb-6">
-                <h1 className="text-3xl font-bold text-green-700">Warehouse POS System</h1>
+        <>
+            {showModal && (
+                <NotificationModal
+                    onClose={() => setShowModal(false)}
+                    notifications={notifications}
+                />
+            )}
 
-                <div className="flex gap-3">
-                    <NotificationButton />
-                    <AddItemButton />
-                    <SettingsButton />
+            <div
+                className="min-h-screen bg-cover bg-center text-green-800 p-8"
+                style={{ backgroundImage: `url(${Background})` }}
+            >
+
+                <div className="flex items-center justify-between mb-6">
+                    <h1 className="text-3xl font-bold text-green-700">Warehouse POS System</h1>
+
+                    <div className="flex gap-3">
+                        {showModal && (
+                            <NotificationModal
+                                onClose={() => setShowModal(false)}
+                                notifications={notifications}
+                            />
+                        )}
+
+                        {showScannerModal && (
+                            <ScannerModal onClose={() => setShowScannerModal(false)} />
+                        )}
+
+                        <ScannerButton onClick={() => setShowScannerModal(true)} />
+                        <NotificationButton onClick={() => setShowModal(true)} />
+                        <AddItemButton />
+                        <SettingsButton />
+                    </div>
+                </div>
+
+
+                {/* Search */}
+                <input
+                    type="text"
+                    placeholder="Search for item..."
+                    className="w-full p-3 rounded-md border border-green-300 mb-6 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+
+                {/* Item Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {filteredItems.map(item => (
+                        <ItemCard
+                            key={item.id}
+                            item={item}
+                            onTake={(id) => updateStock(id, -1, "Taken")}
+                            onAdd={(id) => updateStock(id, 1, "Added")}
+                            onEdit={(item) => {
+                                setCurrentItem(item);
+                                setShowEditModal(true);
+                            }}
+                        />
+
+                    ))}
+                </div>
+
+                {/* Action Logs */}
+                <div className="mt-10">
+                    <h2 className="text-2xl font-bold mb-4">Recent Activity Log</h2>
+                    {logs.length === 0 ? (
+                        <p className="text-gray-600">No activity yet.</p>
+                    ) : (
+                        <ul className="space-y-3">
+                            {logs.map(log => (
+                                <ActivityLogItem key={log.id} log={log} />
+                            ))}
+                        </ul>
+                    )}
                 </div>
             </div>
 
-
-            {/* Search */}
-            <input
-                type="text"
-                placeholder="Search for item..."
-                className="w-full p-3 rounded-md border border-green-300 mb-6 focus:outline-none focus:ring-2 focus:ring-green-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-            />
-
-            {/* Item Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {filteredItems.map(item => (
-                    <div key={item.id} className="border border-green-500 p-4 rounded-lg shadow transition transform hover:shadow-green-400 hover:scale-105">
-                        <h2 className="text-xl font-semibold">{item.name}</h2>
-                        <p>₱{item.price}</p>
-                        <p className="text-sm text-gray-500">Stock: {item.stock}</p>
-
-                        <div className="mt-4 flex gap-2">
-                            <button
-                                onClick={() => updateStock(item.id, -1, "Taken")}
-                                disabled={item.stock === 0}
-                                className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition w-full"
-                            >
-                                Take Item
-                            </button>
-                            <button
-                                onClick={() => updateStock(item.id, 1, "Added")}
-                                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition w-full"
-                            >
-                                Add Stock
-                            </button>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Action Logs */}
-            <div className="mt-10">
-                <h2 className="text-2xl font-bold mb-4">Recent Activity Log</h2>
-                {logs.length === 0 ? (
-                    <p className="text-gray-600">No activity yet.</p>
-                ) : (
-                    <ul className="space-y-3">
-                        {logs.map(log => (
-                            <li key={log.id} className="bg-white p-3 rounded-md shadow border-l-4 border-green-400">
-                                <div className="flex justify-between">
-                                    <span className="font-medium">{log.action} — {log.item} x{log.quantity}</span>
-                                    <span className="text-sm text-gray-500">{log.timestamp}</span>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </div>
-        </div>
+            {showEditModal && currentItem && (
+                <EditItemModal
+                    isOpen={showEditModal}
+                    onClose={() => setShowEditModal(false)}
+                    onSave={handleSaveEditedItem}
+                    item={currentItem}
+                />
+            )}
+        </>
     );
+
 }
 
 export default StocksPage;
