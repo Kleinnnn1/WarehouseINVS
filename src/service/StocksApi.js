@@ -12,7 +12,7 @@ export const fetchItems = async () => {
     return data || [];
 };
 
-//activity logs api
+// activity logs api
 export const fetchActivityLogs = async () => {
     const { data, error } = await supabase
         .from("activity_logs")
@@ -35,14 +35,19 @@ export const fetchActivityLogs = async () => {
         item: log.items?.name || "Unknown Item",
         action: `${log.action_type === "take" ? "Taken" : "Added"} by ${log.issued_to}`,
         quantity: log.quantity,
-        timestamp: new Date(log.issued_at).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
+        timestamp: new Date(log.issued_at).toLocaleString("en-PH", {
+            timeZone: "Asia/Manila",
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
         }),
         reason: log.reason,
     }));
 };
+
 
 //takeitem api
 export const takeItem = async ({ itemId, newStock, issuedTo, issuedAt, reason, quantity }) => {

@@ -48,7 +48,7 @@ function TakeItemModal({ isOpen, onClose, onSubmit, item }) {
             const { error: logError } = await supabase.from("activity_logs").insert({
                 item_id: item.id,
                 issued_to: who,
-                issued_at: when,
+                issued_at: new Date(when).toISOString(),
                 reason: reason,
                 quantity: parsedQty,
                 action_type: "take",
