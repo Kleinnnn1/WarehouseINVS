@@ -11,7 +11,7 @@ import Background from "../../assets/images/background.jpg";
 import EditItemModal from "../../components/EditItemModal";
 import AddStockModal from "../../components/AddModalStock";
 import TakeItemModal from "../../components/TakeItemModal";
-import { fetchItems, fetchActivityLogs } from "../../service/StocksApi";
+import { fetchItems, fetchActivityLogs, fetchNotifications } from "../../service/StocksApi";
 
 function StocksPage() {
     const [logs, setLogs] = useState([]);
@@ -26,22 +26,19 @@ function StocksPage() {
     const [selectedItem, setSelectedItem] = useState(null);
     const [showTakeModal, setShowTakeModal] = useState(false);
     const [takingItem, setTakingItem] = useState(null);
-
-    const notifications = [
-        "Item A stock is low.",
-        "New stock added for Item B.",
-        "System maintenance scheduled tomorrow.",
-    ];
+    const [notifications, setNotifications] = useState([]);
 
     const fetchItemsAndLogs = async () => {
         setLoading(true);
         try {
-            const [itemsData, logsData] = await Promise.all([
+            const [itemsData, logsData, notificationsData] = await Promise.all([
                 fetchItems(),
                 fetchActivityLogs(),
+                fetchNotifications(),
             ]);
             setItems(itemsData);
             setLogs(logsData);
+            setNotifications(notificationsData);
         } catch (err) {
             console.error("Error fetching data:", err.message);
         } finally {

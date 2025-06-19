@@ -6,16 +6,28 @@ function NotificationModal({ onClose, notifications }) {
                 {notifications.length === 0 ? (
                     <p className="text-gray-500">You're all caught up!</p>
                 ) : (
-                    <ul className="space-y-2">
-                        {notifications.map((note, idx) => (
-                            <li
-                                key={idx}
-                                className="bg-yellow-100 border-l-4 border-yellow-500 p-3 rounded-md text-yellow-800 shadow-sm"
-                            >
-                                {note}
-                            </li>
-                        ))}
+                    <ul className="space-y-2 max-h-80 overflow-y-auto">
+                        {notifications.map((note) => {
+                            const match = note.message.match(/^⚠️ Low Stock Alert: (.+?) is running low/);
+                            const itemName = match ? match[1] : null;
+
+                            return (
+                                <li
+                                    key={note.id}
+                                    className="bg-yellow-100 border-l-4 border-yellow-500 p-3 rounded-md text-yellow-800 shadow-sm"
+                                >
+                                    {itemName ? (
+                                        <>
+                                            ⚠️ Low Stock Alert: <strong>{itemName}</strong> is running low. Please restock soon!
+                                        </>
+                                    ) : (
+                                        note.message
+                                    )}
+                                </li>
+                            );
+                        })}
                     </ul>
+
                 )}
                 <button
                     onClick={onClose}

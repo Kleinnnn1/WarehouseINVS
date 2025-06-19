@@ -74,3 +74,14 @@ export const takeItem = async ({ itemId, newStock, issuedTo, issuedAt, reason, q
 
     return updatedItem;
 };
+
+//notification api
+export const fetchNotifications = async () => {
+    const { data, error } = await supabase
+        .from("notification")
+        .select("id, message, mark, created_at")
+        .order("created_at", { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return data || [];
+};
