@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import background from "../../assets/images/background.jpg";
 
 function SettingPage() {
     const [username, setUsername] = useState("");
@@ -16,8 +17,11 @@ function SettingPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
-            <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+        <div
+            className="min-h-screen flex items-center justify-center p-6 bg-cover bg-center"
+            style={{ backgroundImage: `url(${background})` }}
+        >
+            <div className="bg-white/90 p-8 rounded-lg shadow-lg w-full max-w-md backdrop-blur-sm">
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-bold text-green-700">Account Settings</h1>
                 </div>
@@ -75,7 +79,7 @@ function SettingPage() {
                         Save Changes
                     </button>
                     <button
-                        type="submit"
+                        type="button"
                         className="w-full bg-red-600 text-white py-3 rounded-md hover:bg-red-700 transition"
                         onClick={() => navigate(-1)}
                     >
