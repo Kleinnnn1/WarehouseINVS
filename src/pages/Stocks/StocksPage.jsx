@@ -27,6 +27,28 @@ function StocksPage() {
     const [showTakeModal, setShowTakeModal] = useState(false);
     const [takingItem, setTakingItem] = useState(null);
     const [notifications, setNotifications] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const logsPerPage = 5;
+    const [itemPage, setItemPage] = useState(1);
+    const itemsPerPage = 9;
+
+    const filteredItems = items.filter(item =>
+        item.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const indexOfLastItem = itemPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
+
+    const totalItemPages = Math.ceil(filteredItems.length / itemsPerPage);
+
+
+
+    const indexOfLastLog = currentPage * logsPerPage;
+    const indexOfFirstLog = indexOfLastLog - logsPerPage;
+    const currentLogs = logs.slice(indexOfFirstLog, indexOfLastLog);
+
+    const totalPages = Math.ceil(logs.length / logsPerPage);
 
     const fetchItemsAndLogs = async () => {
         setLoading(true);
@@ -85,10 +107,6 @@ function StocksPage() {
         ));
     };
 
-    const filteredItems = items.filter(item =>
-        item.name?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
     return (
         <>
             {showModal && (
@@ -133,24 +151,50 @@ function StocksPage() {
                 ) : filteredItems.length === 0 ? (
                     <p className="text-gray-600 text-center">No available items.</p>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {filteredItems.map(item => (
-                            <ItemCard
-                                key={item.id}
-                                item={item}
-                                onTake={(item) => {
-                                    setTakingItem(item);
-                                    setShowTakeModal(true);
-                                }}
-                                onAdd={handleAddStock}
-                                onEdit={(item) => {
-                                    setCurrentItem(item);
-                                    setShowEditModal(true);
-                                }}
-                            />
-                        ))}
-                    </div>
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {currentItems.map(item => (
+                                <ItemCard
+                                    key={item.id}
+                                    item={item}
+                                    onTake={(item) => {
+                                        setTakingItem(item);
+                                        setShowTakeModal(true);
+                                    }}
+                                    onAdd={handleAddStock}
+                                    onEdit={(item) => {
+                                        setCurrentItem(item);
+                                        setShowEditModal(true);
+                                    }}
+                                />
+                            ))}
+                        </div>
+
+                        {/* ✅ Item pagination controls go here */}
+                        {totalItemPages > 1 && (
+                            <div className="flex justify-center mt-6 gap-2">
+                                <button
+                                    onClick={() => setItemPage((prev) => Math.max(prev - 1, 1))}
+                                    className="px-3 py-1 bg-green-500 text-white rounded disabled:opacity-50"
+                                    disabled={itemPage === 1}
+                                >
+                                    Prev
+                                </button>
+                                <span className="px-3 py-1 text-green-800 font-medium">
+                                    Page {itemPage} of {totalItemPages}
+                                </span>
+                                <button
+                                    onClick={() => setItemPage((prev) => Math.min(prev + 1, totalItemPages))}
+                                    className="px-3 py-1 bg-green-500 text-white rounded disabled:opacity-50"
+                                    disabled={itemPage === totalItemPages}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
+
 
                 {/* Action Logs */}
                 <div className="mt-10">
@@ -159,12 +203,34 @@ function StocksPage() {
                         <p className="text-gray-600">No activity yet.</p>
                     ) : (
                         <ul className="space-y-3">
-                            {logs.map(log => (
+                            {currentLogs.map(log => (
                                 <ActivityLogItem key={log.id} log={log} />
                             ))}
                         </ul>
                     )}
                 </div>
+
+                {totalPages > 1 && (
+                    <div className="flex justify-center mt-4 gap-2">
+                        <button
+                            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                            className="px-3 py-1 bg-green-500 text-white rounded disabled:opacity-50"
+                            disabled={currentPage === 1}
+                        >
+                            Prev
+                        </button>
+                        <span className="px-3 py-1 text-green-800 font-medium">
+                            Page {currentPage} of {totalPages}
+                        </span>
+                        <button
+                            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                            className="px-3 py-1 bg-green-500 text-white rounded disabled:opacity-50"
+                            disabled={currentPage === totalPages}
+                        >
+                            Next
+                        </button>
+                    </div>
+                )}
             </div>
 
             {showEditModal && currentItem && (
