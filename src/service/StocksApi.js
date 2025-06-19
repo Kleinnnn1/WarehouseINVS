@@ -102,3 +102,33 @@ export const markNotificationAsRead = async (id) => {
         throw new Error(error.message);
     }
 };
+
+
+// register api
+export const registerUser = async ({ email, password }) => {
+    const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+    });
+
+    if (error) throw error;
+    return data;
+};
+
+
+// login api
+export const loginUser = async ({ email, password }) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+    });
+
+    if (error) throw error;
+    return data;
+};
+
+// logout api
+export const logoutUser = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw new Error("Failed to logout: " + error.message);
+};

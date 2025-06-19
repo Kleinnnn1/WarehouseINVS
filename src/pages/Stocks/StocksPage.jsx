@@ -11,6 +11,7 @@ import Background from "../../assets/images/background.jpg";
 import EditItemModal from "../../components/EditItemModal";
 import AddStockModal from "../../components/AddModalStock";
 import TakeItemModal from "../../components/TakeItemModal";
+import LogoutIcon from "../../components/LogoutIcon";
 import { fetchItems, fetchActivityLogs, fetchNotifications } from "../../service/StocksApi";
 
 function StocksPage() {
@@ -126,8 +127,10 @@ function StocksPage() {
             >
                 <div className="flex items-center justify-between mb-6">
                     <h1 className="text-3xl font-bold text-green-700">Warehouse Inventory System</h1>
+                    
 
                     <div className="flex gap-3">
+                        <LogoutIcon />
                         <ScannerButton onClick={() => setShowScannerModal(true)} />
                         <NotificationButton
                             onClick={() => setShowModal(true)}

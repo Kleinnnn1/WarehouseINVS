@@ -1,19 +1,34 @@
 import { useState } from "react";
-import logo from "../assets/images/mainLogo.png"; // Local logo
+import { useNavigate } from "react-router-dom";
+import logo from "../assets/images/mainLogo.png";
+import { loginUser } from "../service/StocksApi"; // make sure path is correct
 
-function LoginModal({ isOpen, onClose, onLogin }) {
+function LoginModal({ isOpen, onClose }) {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+
         if (!email || !password) {
             setError("Please enter both email and password.");
             return;
         }
+
+        setLoading(true);
         setError(null);
-        if (onLogin) onLogin({ email, password });
+
+        try {
+            await loginUser({ email, password });
+            navigate("/Stocks"); // ✅ navigate to Stocks if successful
+        } catch (err) {
+            setError(err.message || "Login failed. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (!isOpen) return null;
@@ -21,13 +36,8 @@ function LoginModal({ isOpen, onClose, onLogin }) {
     return (
         <div className="fixed inset-0 bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="bg-white rounded-2xl shadow-lg w-full max-w-sm p-6 border-2 border-green-600">
-                {/* Logo */}
                 <div className="flex justify-center mb-4">
-                    <img
-                        src={logo}
-                        alt="Logo"
-                        className="w-25 h-25"
-                    />
+                    <img src={logo} alt="Logo" className="w-25 h-25" />
                 </div>
 
                 <h2 className="text-2xl font-bold text-green-700 text-center mb-6">Login</h2>
@@ -67,8 +77,9 @@ function LoginModal({ isOpen, onClose, onLogin }) {
                         <button
                             type="submit"
                             className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+                            disabled={loading}
                         >
-                            Login
+                            {loading ? "Logging in..." : "Login"}
                         </button>
                     </div>
                 </form>
