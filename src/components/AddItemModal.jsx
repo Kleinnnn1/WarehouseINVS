@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../service/supabaseClient"
+import QRCode from "qrcode";
 
 function AddItemModal({ isOpen, onClose, onSave }) {
     const [formData, setFormData] = useState({
@@ -16,18 +17,62 @@ function AddItemModal({ isOpen, onClose, onSave }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        const itemName = formData.itemName.trim();
+        const fileName = `qr-${Date.now()}-${itemName}.png`;
+        let qrImageUrl = null;
+
+        try {
+            // 1. Generate QR code (use item name or custom string)
+            const qrDataUrl = await QRCode.toDataURL(itemName);
+
+            // 2. Convert data URL to Blob
+            const response = await fetch(qrDataUrl);
+            const blob = await response.blob();
+
+            // 3. Upload to Supabase Storage
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from("qr-codes") // Bucket name (make sure it's created)
+                .upload(fileName, blob, {
+                    contentType: "image/png",
+                    upsert: true
+                });
+
+            if (uploadError) {
+                console.error("QR upload failed:", uploadError.message);
+                alert("Failed to upload QR code.");
+                return;
+            }
+
+            // 4. Get public URL
+            const { data: urlData, error: urlError } = supabase.storage
+                .from("qr-codes")
+                .getPublicUrl(fileName);
+
+            if (urlError) {
+                console.error("Failed to get public URL:", urlError.message);
+                return;
+            }
+
+            qrImageUrl = urlData.publicUrl;
+
+        } catch (err) {
+            console.error("QR Code generation failed:", err.message);
+            alert("Failed to generate QR code.");
+            return;
+        }
+
+        // 5. Insert item to DB
         const newItem = {
-            name: formData.itemName,
+            name: itemName,
             stock: parseInt(formData.stock),
             price: formData.price ? parseFloat(formData.price) : null,
-            qr_url: formData.qrCode || null,
-            threshold: 0,
+            qr_url: qrImageUrl,
         };
 
         const { data, error } = await supabase
             .from("items")
             .insert([newItem])
-            .select(); // ⬅️ Make sure to use `.select()` to return the inserted data
+            .select();
 
         if (error || !data || data.length === 0) {
             console.error("Failed to insert item:", error?.message || "No data returned");
@@ -44,6 +89,7 @@ function AddItemModal({ isOpen, onClose, onSave }) {
             alert("Item added successfully!");
         }, 100);
     };
+
 
 
 
@@ -84,16 +130,6 @@ function AddItemModal({ isOpen, onClose, onSave }) {
                             name="price"
                             onChange={handleChange}
                             value={formData.price}
-                            className="w-full border border-green-300 rounded-md p-2 focus:ring-2 focus:ring-green-500 outline-none"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-green-800 font-medium mb-1">QR Code</label>
-                        <input
-                            type="text"
-                            name="qrCode"
-                            onChange={handleChange}
-                            value={formData.qrCode}
                             className="w-full border border-green-300 rounded-md p-2 focus:ring-2 focus:ring-green-500 outline-none"
                         />
                     </div>

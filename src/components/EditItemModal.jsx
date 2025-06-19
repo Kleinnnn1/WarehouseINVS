@@ -84,14 +84,28 @@ function EditItemModal({ isOpen, onClose, onSave, item }) {
                     </div>
                     <div>
                         <label className="block text-green-800 font-medium mb-1">QR Code</label>
-                        <input
-                            type="text"
-                            name="qrCode"
-                            value={formData.qrCode}
-                            disabled
-                            className="w-full border border-green-300 rounded-md p-2 bg-gray-100 cursor-not-allowed"
-                        />
+                        <div className="flex justify-center items-center min-h-[8rem]">
+                            {formData.qrCode ? (
+                                <a
+                                    href={formData.qrCode}
+                                    download={`qr-${formData.itemName}.png`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <img
+                                        src={formData.qrCode}
+                                        alt="QR Code"
+                                        className="w-32 h-32 border border-green-300 rounded-md cursor-pointer hover:opacity-80 transition"
+                                        title="Click to download QR code"
+                                    />
+                                </a>
+                            ) : (
+                                <p className="text-gray-500 italic">No QR code available</p>
+                            )}
+                        </div>
                     </div>
+
+
                     <div className="flex justify-between items-center mt-4">
                         <button
                             type="button"
