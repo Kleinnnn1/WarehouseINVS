@@ -85,3 +85,15 @@ export const fetchNotifications = async () => {
     if (error) throw new Error(error.message);
     return data || [];
 };
+
+//mark notification api
+export const markNotificationAsRead = async (id) => {
+    const { error } = await supabase
+        .from("notification")
+        .update({ mark: true })
+        .eq("id", id);
+
+    if (error) {
+        throw new Error(error.message);
+    }
+};

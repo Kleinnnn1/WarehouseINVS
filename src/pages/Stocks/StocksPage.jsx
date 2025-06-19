@@ -111,7 +111,10 @@ function StocksPage() {
 
                     <div className="flex gap-3">
                         <ScannerButton onClick={() => setShowScannerModal(true)} />
-                        <NotificationButton onClick={() => setShowModal(true)} />
+                        <NotificationButton
+                            onClick={() => setShowModal(true)}
+                            count={notifications.filter(n => !n.mark).length}
+                        />
                         <AddItemButton />
                         <SettingsButton />
                     </div>
