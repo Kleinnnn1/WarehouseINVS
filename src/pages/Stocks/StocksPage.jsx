@@ -9,9 +9,9 @@ import ScannerButton from "../../components/ScannerButton";
 import ScannerModal from "../../components/ScannerModal";
 import Background from "../../assets/images/background.jpg";
 import EditItemModal from "../../components/EditItemModal";
-import { supabase } from "../../service/supabaseClient";
 import AddStockModal from "../../components/AddModalStock";
 import TakeItemModal from "../../components/TakeItemModal";
+import { fetchItems, fetchActivityLogs } from "../../service/StocksApi";
 
 function StocksPage() {
     const [logs, setLogs] = useState([]);
@@ -33,54 +33,17 @@ function StocksPage() {
         "System maintenance scheduled tomorrow.",
     ];
 
-    const fetchLogs = async () => {
-        const { data: logsData, error: logsError } = await supabase
-            .from("activity_logs")
-            .select(`
-                id,
-                item_id,
-                quantity,
-                action_type,
-                reason,
-                issued_to,
-                issued_at,
-                items (name)
-            `)
-            .order("issued_at", { ascending: false });
-
-        if (logsError) {
-            console.error("Error fetching activity logs:", logsError.message);
-        } else {
-            const formattedLogs = logsData.map(log => ({
-                id: log.id,
-                item: log.items?.name || "Unknown Item",
-                action: `${log.action_type === "take" ? "Taken" : "Added"} by ${log.issued_to}`,
-                quantity: log.quantity,
-                timestamp: new Date(log.issued_at).toLocaleString(),
-                reason: log.reason,
-            }));
-
-            setLogs(formattedLogs);
-        }
-    };
-
     const fetchItemsAndLogs = async () => {
         setLoading(true);
         try {
-            const { data: itemsData, error: itemsError } = await supabase
-                .from("items")
-                .select("*")
-                .order("id", { ascending: true });
-
-            if (itemsError) {
-                console.error("Error fetching items:", itemsError.message);
-            } else {
-                setItems(itemsData);
-            }
-
-            await fetchLogs();
+            const [itemsData, logsData] = await Promise.all([
+                fetchItems(),
+                fetchActivityLogs(),
+            ]);
+            setItems(itemsData);
+            setLogs(logsData);
         } catch (err) {
-            console.error("Unexpected error:", err);
+            console.error("Error fetching data:", err.message);
         } finally {
             setLoading(false);
         }
@@ -90,11 +53,10 @@ function StocksPage() {
         fetchItemsAndLogs();
     }, []);
 
-    const handleConfirmTakeItem = async (details) => {
+    const handleConfirmTakeItem = async () => {
         updateStock(takingItem.id, -1);
-
-        await fetchLogs();
-
+        const updatedLogs = await fetchActivityLogs();
+        setLogs(updatedLogs);
         setTakingItem(null);
         setShowTakeModal(false);
     };
@@ -108,11 +70,10 @@ function StocksPage() {
         setItems(prev =>
             prev.map(i => (i.id === updatedItem.id ? updatedItem : i))
         );
-
         setShowAddStockModal(false);
         setSelectedItem(null);
-
-        await fetchLogs();
+        const updatedLogs = await fetchActivityLogs();
+        setLogs(updatedLogs);
     };
 
     const handleSaveEditedItem = (updatedItem) => {
@@ -122,13 +83,13 @@ function StocksPage() {
     const updateStock = (itemId, delta) => {
         setItems(items.map(item =>
             item.id === itemId
-                ? { ...item, stock: Math.max(item.stock + delta, 0) }
+                ? { ...item, stock: Math.max((item.stock || 0) + delta, 0) }
                 : item
         ));
     };
 
     const filteredItems = items.filter(item =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase())
+        item.name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -149,7 +110,7 @@ function StocksPage() {
                 style={{ backgroundImage: `url(${Background})` }}
             >
                 <div className="flex items-center justify-between mb-6">
-                    <h1 className="text-3xl font-bold text-green-700">Warehouse POS System</h1>
+                    <h1 className="text-3xl font-bold text-green-700">Warehouse Inventory System</h1>
 
                     <div className="flex gap-3">
                         <ScannerButton onClick={() => setShowScannerModal(true)} />
@@ -159,7 +120,6 @@ function StocksPage() {
                     </div>
                 </div>
 
-                {/* Search */}
                 <input
                     type="text"
                     placeholder="Search for item..."
@@ -168,7 +128,6 @@ function StocksPage() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
 
-                {/* Item Grid */}
                 {loading ? (
                     <p>Loading items...</p>
                 ) : filteredItems.length === 0 ? (

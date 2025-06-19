@@ -3,7 +3,7 @@ import { supabase } from "../service/supabaseClient";
 
 function TakeItemModal({ isOpen, onClose, onSubmit, item }) {
     const [who, setWho] = useState("");
-    const [when, setWhen] = useState(new Date().toISOString().slice(0, 16));
+    const [when, setWhen] = useState(new Date());
     const [reason, setReason] = useState("");
     const [quantity, setQuantity] = useState(1);
     const [loading, setLoading] = useState(false);
