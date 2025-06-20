@@ -12,6 +12,7 @@ import EditItemModal from "../../components/EditItemModal";
 import AddStockModal from "../../components/AddModalStock";
 import TakeItemModal from "../../components/TakeItemModal";
 import LogoutIcon from "../../components/LogoutIcon";
+import AddItemModal from "../../components/AddItemModal"
 import { fetchItems, fetchActivityLogs, fetchNotifications } from "../../service/StocksApi";
 
 function StocksPage() {
@@ -28,6 +29,7 @@ function StocksPage() {
     const [showTakeModal, setShowTakeModal] = useState(false);
     const [takingItem, setTakingItem] = useState(null);
     const [notifications, setNotifications] = useState([]);
+    const [showAddItemModal, setShowAddItemModal] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const logsPerPage = 5;
     const [itemPage, setItemPage] = useState(1);
@@ -74,12 +76,20 @@ function StocksPage() {
     }, []);
 
     const handleConfirmTakeItem = async () => {
+        // Optional: keep optimistic update
         updateStock(takingItem.id, -1);
-        const updatedLogs = await fetchActivityLogs();
-        setLogs(updatedLogs);
+
+        try {
+            await fetchItemsAndLogs(); // ✅ Refetch items, logs, and notifications
+        } catch (error) {
+            console.error("Failed to refetch data after taking item:", error);
+        }
+
         setTakingItem(null);
         setShowTakeModal(false);
     };
+
+
 
     const handleAddStock = (item) => {
         setSelectedItem(item);
@@ -127,7 +137,7 @@ function StocksPage() {
             >
                 <div className="flex items-center justify-between mb-6">
                     <h1 className="text-3xl font-bold text-green-700">Warehouse Inventory System</h1>
-                    
+
 
                     <div className="flex gap-3">
                         <LogoutIcon />
@@ -136,7 +146,7 @@ function StocksPage() {
                             onClick={() => setShowModal(true)}
                             count={notifications.filter(n => !n.mark).length}
                         />
-                        <AddItemButton />
+                        <AddItemButton onClick={() => setShowAddItemModal(true)} />
                         <SettingsButton />
                     </div>
                 </div>
@@ -260,6 +270,17 @@ function StocksPage() {
                     onClose={() => setShowTakeModal(false)}
                     onSubmit={handleConfirmTakeItem}
                     item={takingItem}
+                />
+            )}
+
+            {showAddItemModal && (
+                <AddItemModal
+                    isOpen={showAddItemModal}
+                    onClose={() => setShowAddItemModal(false)}
+                    onSave={async () => {
+                        await fetchItemsAndLogs();   // ✅ Refetch new data
+                        setShowAddItemModal(false); // ✅ Close the modal
+                    }}
                 />
             )}
         </>
