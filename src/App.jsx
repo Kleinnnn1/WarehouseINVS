@@ -4,10 +4,13 @@ import SettingPage from './pages/Setting/SettingPage';
 import LandingPage from './pages/Landing/LandingPage';
 import RegisterPage from './pages/Register/RegisterPage';
 import ProtectedRoute from './components/ProtectedRoute'; // update the path if needed
+import { Toaster } from "react-hot-toast";
 
 function App() {
   return (
     <Router>
+
+      <Toaster position="top-center" />
       <Routes>
         {/* Public route */}
         <Route path="/" element={<LandingPage />} />

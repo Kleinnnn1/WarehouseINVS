@@ -251,6 +251,7 @@ function StocksPage() {
                     isOpen={showEditModal}
                     onClose={() => setShowEditModal(false)}
                     onSave={handleSaveEditedItem}
+                    onDelete={fetchItemsAndLogs} // 🔁 this will refetch items + logs
                     item={currentItem}
                 />
             )}

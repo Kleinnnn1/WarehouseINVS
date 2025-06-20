@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../service/supabaseClient";
+import Swal from "sweetalert2";
 
-function EditItemModal({ isOpen, onClose, onSave, item }) {
+function EditItemModal({ isOpen, onClose, onSave, onDelete, item }) {
     const [formData, setFormData] = useState({
         itemName: "",
         stock: "",
@@ -35,23 +36,40 @@ function EditItemModal({ isOpen, onClose, onSave, item }) {
     const handleDelete = async () => {
         if (!item || !item.id) return;
 
-        const confirm = window.confirm(`Are you sure you want to delete "${item.name}"?`);
-        if (!confirm) return;
+        const result = await Swal.fire({
+            title: `Delete "${item.name}"?`,
+            text: "This action cannot be undone!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#3085d6",
+            confirmButtonText: "Yes, delete it!",
+        });
 
-        const { error } = await supabase
-            .from("items")
-            .delete()
-            .eq("id", item.id);
+        if (!result.isConfirmed) return;
+
+        const { error } = await supabase.from("items").delete().eq("id", item.id);
 
         if (error) {
-            console.error("Delete failed:", error.message);
-            alert("Failed to delete item.");
+            Swal.fire({
+                icon: "error",
+                title: "Delete Failed",
+                text: error.message,
+            });
         } else {
-            alert("Item deleted successfully.");
-            onClose(); // Close the modal
-            // Optionally trigger parent refresh
+            Swal.fire({
+                icon: "success",
+                title: "Deleted!",
+                text: "Item deleted successfully.",
+                timer: 2000,
+                showConfirmButton: false,
+            });
+
+            if (onDelete) onDelete(); // 🔁 Trigger refetch in parent
+            onClose(); // ✅ Close the modal
         }
     };
+
 
     if (!isOpen) return null;
 

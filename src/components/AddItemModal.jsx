@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "../service/supabaseClient"
 import QRCode from "qrcode";
+import { toast } from "react-hot-toast";
 
 function AddItemModal({ isOpen, onClose, onSave }) {
     const [formData, setFormData] = useState({
@@ -39,7 +40,7 @@ function AddItemModal({ isOpen, onClose, onSave }) {
 
             if (uploadError) {
                 console.error("QR upload failed:", uploadError.message);
-                alert("Failed to upload QR code.");
+                toast.error("Failed to upload QR code.");
                 return;
             }
 
@@ -57,7 +58,7 @@ function AddItemModal({ isOpen, onClose, onSave }) {
 
         } catch (err) {
             console.error("QR Code generation failed:", err.message);
-            alert("Failed to generate QR code.");
+            toast.error("Failed to generate QR code.");
             return;
         }
 
@@ -76,7 +77,7 @@ function AddItemModal({ isOpen, onClose, onSave }) {
 
         if (error || !data || data.length === 0) {
             console.error("Failed to insert item:", error?.message || "No data returned");
-            alert("Failed to save item. Check the console for details.");
+            toast.error("Failed to save item.");
             return;
         }
 
@@ -85,9 +86,7 @@ function AddItemModal({ isOpen, onClose, onSave }) {
         setFormData({ itemName: "", stock: "", price: "", qrCode: "" });
         onClose();
 
-        setTimeout(() => {
-            alert("Item added successfully!");
-        }, 100);
+        toast.success("Item added successfully!");
     };
 
 
