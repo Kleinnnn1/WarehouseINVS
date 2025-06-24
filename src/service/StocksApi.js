@@ -132,3 +132,16 @@ export const logoutUser = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw new Error("Failed to logout: " + error.message);
 };
+
+
+// mark all notifications as read
+export const markAllNotificationsAsRead = async () => {
+    const { error } = await supabase
+        .from("notification")
+        .update({ mark: true })
+        .eq("mark", false); // Only mark unread ones
+
+    if (error) {
+        throw new Error(error.message);
+    }
+};

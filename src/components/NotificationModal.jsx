@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { markNotificationAsRead } from "../service/StocksApi"; // adjust path if needed
+import { useState, useEffect } from "react";
+import { markAllNotificationsAsRead } from "../service/StocksApi"; // ✅ Use the new function
 
 function NotificationModal({ onClose, notifications }) {
     const [currentPage, setCurrentPage] = useState(1);
@@ -19,18 +19,21 @@ function NotificationModal({ onClose, notifications }) {
         if (currentPage > 1) setCurrentPage(prev => prev - 1);
     };
 
-    const handleNotificationClick = async (id) => {
-        try {
-            await markNotificationAsRead(id);
+    // ✅ Mark all as read on modal open
+    useEffect(() => {
+        const markAll = async () => {
+            try {
+                await markAllNotificationsAsRead();
+                setLocalNotifications((prev) =>
+                    prev.map((note) => ({ ...note, mark: true }))
+                );
+            } catch (err) {
+                console.error("Error marking all notifications as read:", err.message);
+            }
+        };
 
-            // Update UI state locally
-            setLocalNotifications(prev =>
-                prev.map(note => note.id === id ? { ...note, mark: true } : note)
-            );
-        } catch (error) {
-            console.error("Error marking notification:", error.message);
-        }
-    };
+        markAll();
+    }, []);
 
     return (
         <div className="fixed inset-0 bg-opacity-30 flex items-center justify-center z-50 backdrop-blur-sm">
@@ -49,8 +52,7 @@ function NotificationModal({ onClose, notifications }) {
                                 return (
                                     <li
                                         key={note.id}
-                                        onClick={() => handleNotificationClick(note.id)}
-                                        className={`cursor-pointer p-3 rounded-md shadow-sm border-l-4 ${
+                                        className={`p-3 rounded-md shadow-sm border-l-4 ${
                                             note.mark
                                                 ? "bg-gray-200 border-gray-400 text-gray-700"
                                                 : "bg-yellow-100 border-yellow-500 text-yellow-800"

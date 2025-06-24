@@ -118,28 +118,41 @@ function StocksPage() {
         ));
     };
 
+    const fetchNotificationsOnly = async () => {
+        try {
+            const updated = await fetchNotifications();
+            setNotifications(updated);
+        } catch (err) {
+            console.error("Failed to refetch notifications:", err.message);
+        }
+    };
+
     return (
         <>
             {showModal && (
                 <NotificationModal
-                    onClose={() => setShowModal(false)}
+                    onClose={async () => {
+                        await fetchNotificationsOnly();  // ✅ Refresh notifications after modal closes
+                        setShowModal(false);
+                    }}
                     notifications={notifications}
                 />
             )}
+
 
             {showScannerModal && (
                 <ScannerModal onClose={() => setShowScannerModal(false)} />
             )}
 
             <div
-                className="min-h-screen bg-cover bg-center text-green-800 p-8"
+                className="min-h-screen bg-cover bg-center text-green-800 p-4 sm:p-8"
                 style={{ backgroundImage: `url(${Background})` }}
             >
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                     <h1 className="text-3xl font-bold text-green-700">Warehouse Inventory System</h1>
 
 
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap justify-center md:justify-end gap-3">
                         <LogoutIcon />
                         <ScannerButton onClick={() => setShowScannerModal(true)} />
                         <NotificationButton
@@ -150,14 +163,15 @@ function StocksPage() {
                         <SettingsButton />
                     </div>
                 </div>
-
-                <input
-                    type="text"
-                    placeholder="Search for item..."
-                    className="w-full p-3 rounded-md border border-green-300 mb-6 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
+                <div className="mb-6">
+                    <input
+                        type="text"
+                        placeholder="Search for item..."
+                        className="w-full p-3 rounded-md border border-green-300 mb-6 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
 
                 {loading ? (
                     <p>Loading items...</p>
@@ -165,7 +179,7 @@ function StocksPage() {
                     <p className="text-gray-600 text-center">No available items.</p>
                 ) : (
                     <>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {currentItems.map(item => (
                                 <ItemCard
                                     key={item.id}
@@ -185,7 +199,7 @@ function StocksPage() {
 
                         {/* ✅ Item pagination controls go here */}
                         {totalItemPages > 1 && (
-                            <div className="flex justify-center mt-6 gap-2">
+                            <div className="flex flex-wrap justify-center items-center mt-6 gap-2">
                                 <button
                                     onClick={() => setItemPage((prev) => Math.max(prev - 1, 1))}
                                     className="px-3 py-1 bg-green-500 text-white rounded disabled:opacity-50"
@@ -215,7 +229,7 @@ function StocksPage() {
                     {logs.length === 0 ? (
                         <p className="text-gray-600">No activity yet.</p>
                     ) : (
-                        <ul className="space-y-3">
+                        <ul className="space-y-3 text-sm sm:text-base">
                             {currentLogs.map(log => (
                                 <ActivityLogItem key={log.id} log={log} />
                             ))}
