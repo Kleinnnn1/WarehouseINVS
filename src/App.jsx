@@ -1,45 +1,26 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import StocksPage from './pages/Stocks/StocksPage';
-import SettingPage from './pages/Setting/SettingPage';
-import LandingPage from './pages/Landing/LandingPage';
-import RegisterPage from './pages/Register/RegisterPage';
-import ProtectedRoute from './components/ProtectedRoute'; // update the path if needed
 import { Toaster } from "react-hot-toast";
+
+import LandingPage from "./pages/Landing/LandingPage";
+import StocksPage from "./pages/Stocks/StocksPage";
+import SettingPage from "./pages/Setting/SettingPage";
+import RegisterPage from "./pages/Register/RegisterPage";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
     <Router>
-
       <Toaster position="top-center" />
       <Routes>
-        {/* Public route */}
+        {/* Public Route */}
         <Route path="/" element={<LandingPage />} />
 
-        {/* Protected routes */}
-        <Route
-          path="/Stocks"
-          element={
-            <ProtectedRoute>
-              <StocksPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/Setting"
-          element={
-            <ProtectedRoute>
-              <SettingPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/Register"
-          element={
-            <ProtectedRoute>
-              <RegisterPage />
-            </ProtectedRoute>
-          }
-        />
+        {/* Protected Routes (wrapped in one layout) */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/stocks" element={<StocksPage />} />
+          <Route path="/setting" element={<SettingPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+        </Route>
       </Routes>
     </Router>
   );
